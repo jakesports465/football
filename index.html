@@ -10,20 +10,17 @@
   header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--br);background:#0f1318}
   h1{margin:0;font-size:18px}
   .sub{color:var(--muted);font-size:13px}
-  main{max-width:900px;margin:0 auto;padding:18px}
+  main{max-width:980px;margin:0 auto;padding:18px;display:grid;gap:16px}
   .panel{background:var(--card);border:1px solid var(--br);border-radius:14px;padding:14px}
-  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  select,button{background:#0b1117;border:1px solid #1b2633;border-radius:8px;color:var(--text);padding:8px 10px;font-size:14px}
-  button{cursor:pointer}
+  .titleRow{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .muted{color:var(--muted);font-size:12px}
-  .tableWrap{overflow:auto;border:1px solid var(--br);border-radius:12px}
+  .tableWrap{overflow:auto;border:1px solid var(--br);border-radius:12px;margin-top:10px}
   table{border-collapse:separate;border-spacing:0;width:100%;min-width:420px;background:#0f1318}
   thead th{position:sticky;top:0;background:#101722;border-bottom:1px solid #243241;font-weight:700;text-align:left;padding:10px}
   tbody td{padding:10px;border-top:1px solid #1b2430}
   tbody tr:hover{background:#111b24}
   .num{text-align:right;font-variant-numeric:tabular-nums}
   .badge{display:inline-block;background:#101722;border:1px solid #253548;border-radius:8px;padding:2px 6px;margin-left:6px;font-size:12px}
-  .sep{height:1px;background:var(--br);margin:12px 0}
   .error{color:#ffb4b4}
 </style>
 </head>
@@ -31,97 +28,72 @@
 <header>
   <h1>Leaderboards</h1>
   <span class="sub" id="updated">—</span>
-  <span style="flex:1"></span>
-  <button id="reloadBtn" title="Reload JSON">Reload</button>
 </header>
 
-<main>
-  <section class="panel">
-    <div class="row" style="justify-content:space-between">
-      <div class="row">
-        <label for="boardSel" class="muted">Board</label>
-        <select id="boardSel"></select>
-      </div>
-      <div class="row">
-        <input id="filter" type="text" placeholder="Filter by name" style="background:#0b1117;border:1px solid #1b2633;border-radius:8px;color:var(--text);padding:8px 10px" />
-      </div>
-    </div>
-    <div class="sep"></div>
-    <div class="tableWrap">
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th style="min-width:220px;cursor:pointer" data-sort="name">Name</th>
-            <th class="num" style="width:120px;cursor:pointer" data-sort="total">Points</th>
-            <th class="num" style="width:100px;cursor:pointer" data-sort="picks">Picks</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"><tr><td colspan="3" class="muted">Loading…</td></tr></tbody>
-      </table>
-    </div>
-    <div id="note" class="muted" style="margin-top:10px">—</div>
-    <div id="err" class="error" style="margin-top:8px;display:none"></div>
-  </section>
+<main id="boards">
+  <!-- Panels injected here -->
 </main>
 
 <script>
-/*
-Expected leaderboard.json (flexible):
-{
-  "updated": "2025-09-07T19:30:00Z",
-  "nflWeek":   [ { "name":"Jake", "total":12.5, "picks":3 }, ... ],
-  "ncaaWeek":  [ { "name":"AI Alpha", "total":9.75, "picks":3 }, ... ],
-  "nflSeason": [ { "name":"Jake", "points":42 }, ... ],
-  "ncaaSeason":[ { "name":"AI Alpha", "points":37 }, ... ]
-}
-Notes:
-- Uses "total" or "points" for score (both supported)
-- "picks" is optional (season rows may not have it)
-*/
-
 const FILE = 'leaderboard.json'; // same directory
-const $ = (id)=>document.getElementById(id);
-const state = {
-  raw:null,
-  boards:[],          // [{key,label}]
-  rows:[],            // current board rows
-  sort:{ key:'total', dir:'desc' }
-};
+const $ = id => document.getElementById(id);
 
-const LABELS = {
-  nflWeek:'NFL — This Week',
-  ncaaWeek:'NCAA — This Week',
-  nflSeason:'NFL — Season',
-  ncaaSeason:'NCAA — Season'
-};
+// Known sections in preferred order
+const ORDER = [
+  ['nflWeek',   'NFL — This Week'],
+  ['ncaaWeek',  'NCAA — This Week'],
+  ['nflSeason', 'NFL — Season'],
+  ['ncaaSeason','NCAA — Season']
+];
 
-function fmtPoints(x){
-  if (typeof x !== 'number' || !isFinite(x)) return '0.00';
-  return x.toFixed(2);
-}
+function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function fmt(x){ return (typeof x === 'number' && isFinite(x)) ? x.toFixed(2) : '0.00'; }
 
 function normalizeRows(list){
   if (!Array.isArray(list)) return [];
-  return list.map(r=>({
+  return list.map(r => ({
     name: String(r.name ?? r.player ?? '—'),
-    total: Number((r.total ?? r.points ?? 0)) || 0,
-    picks: (r.picks ?? null)
+    total: Number(r.total ?? r.points ?? 0) || 0,
+    picks: (typeof r.picks === 'number') ? r.picks : null
   }));
 }
 
-function detectBoards(json){
-  const keys = ['nflWeek','ncaaWeek','nflSeason','ncaaSeason'];
-  const out = [];
-  for (const k of keys){
-    if (Array.isArray(json[k]) && json[k].length){
-      out.push({key:k, label:LABELS[k]});
-    }
-  }
-  // if nothing matched, but json is an array, treat as a generic board
-  if (!out.length && Array.isArray(json)){
-    return [{key:'_generic', label:'Leaderboard'}];
-  }
-  return out;
+function renderBoard(container, title, rows){
+  // sort by points desc
+  rows.sort((a,b) => b.total - a.total);
+
+  // determine if any row has picks; if none, hide that column
+  const showPicks = rows.some(r => typeof r.picks === 'number');
+
+  const panel = document.createElement('section');
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <div class="titleRow">
+      <h2 style="margin:0;font-size:16px">${esc(title)}</h2>
+      <span class="muted">${rows.length} players</span>
+    </div>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:220px">Name</th>
+            <th class="num" style="width:120px">Points</th>
+            ${showPicks ? '<th class="num" style="width:100px">Picks</th>' : ''}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${esc(r.name)}${showPicks && typeof r.picks === 'number' ? ` <span class="badge">${r.picks}/3</span>` : ''}</td>
+              <td class="num">${fmt(r.total)}</td>
+              ${showPicks ? `<td class="num">${typeof r.picks === 'number' ? r.picks : '—'}</td>` : ''}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  container.appendChild(panel);
 }
 
 function setUpdated(ts){
@@ -132,121 +104,41 @@ function setUpdated(ts){
   }catch(e){ $('updated').textContent = 'Updated: —'; }
 }
 
-function fillBoardSelector(){
-  const sel = $('boardSel');
-  sel.innerHTML = '';
-  state.boards.forEach((b,i)=>{
-    const o = document.createElement('option');
-    o.value = b.key;
-    o.textContent = b.label;
-    sel.appendChild(o);
-  });
-}
+(async function init(){
+  const wrap = document.getElementById('boards');
+  wrap.innerHTML = '<section class="panel"><div class="muted">Loading leaderboard…</div></section>';
 
-function applyFilter(rows){
-  const q = ($('filter').value || '').trim().toLowerCase();
-  if (!q) return rows;
-  return rows.filter(r => r.name.toLowerCase().includes(q));
-}
-
-function renderTable(){
-  const tbody = $('tbody');
-  const rows = applyFilter(state.rows).slice();
-  const {key,dir} = state.sort;
-
-  rows.sort((a,b)=>{
-    let av = a[key], bv = b[key];
-    if (key === 'name'){
-      av = String(av).toLowerCase();
-      bv = String(bv).toLowerCase();
-      if (av < bv) return dir==='asc' ? -1 : 1;
-      if (av > bv) return dir==='asc' ? 1 : -1;
-      return 0;
-    } else {
-      // numeric
-      return dir==='asc' ? (av - bv) : (bv - av);
-    }
-  });
-
-  tbody.innerHTML = '';
-  if (!rows.length){
-    tbody.innerHTML = '<tr><td colspan="3" class="muted">No entries.</td></tr>';
-    return;
-  }
-
-  for (const r of rows){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(r.name)}${typeof r.picks === 'number' ? ` <span class="badge">${r.picks}/3</span>` : ''}</td>
-      <td class="num">${fmtPoints(r.total)}</td>
-      <td class="num">${typeof r.picks === 'number' ? r.picks : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  }
-}
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-function selectBoard(key){
-  let rows = [];
-  if (key === '_generic'){
-    rows = normalizeRows(state.raw);
-  } else {
-    rows = normalizeRows(state.raw[key]);
-  }
-  state.rows = rows;
-  $('note').textContent = `${rows.length} players`;
-  renderTable();
-}
-
-async function loadJSON(){
-  $('err').style.display='none';
-  $('tbody').innerHTML = '<tr><td colspan="3" class="muted">Loading…</td></tr>';
-  $('note').textContent = '—';
   try{
     const res = await fetch(FILE, {cache:'no-store'});
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
 
-    state.raw = json;
-    state.boards = detectBoards(json);
-    if (!state.boards.length){
-      throw new Error('No leaderboard data found in JSON');
+    setUpdated(json.updated);
+
+    // Collect panels to show (in ORDER). Also allow fallback if JSON is just an array.
+    const panels = [];
+    for (const [key, label] of ORDER){
+      const rows = normalizeRows(json[key]);
+      if (rows.length) panels.push([label, rows]);
+    }
+    if (!panels.length && Array.isArray(json)){
+      const rows = normalizeRows(json);
+      if (rows.length) panels.push(['Leaderboard', rows]);
     }
 
-    fillBoardSelector();
-    const firstKey = new URLSearchParams(location.search).get('board') || state.boards[0].key;
-    $('boardSel').value = firstKey;
-    selectBoard(firstKey);
-    setUpdated(json.updated);
+    // Render
+    wrap.innerHTML = '';
+    if (!panels.length){
+      wrap.innerHTML = '<section class="panel"><div class="error">No leaderboard data found.</div></section>';
+      return;
+    }
+    for (const [label, rows] of panels){
+      renderBoard(wrap, label, rows);
+    }
   }catch(err){
-    $('err').textContent = 'Failed to load leaderboard.json: ' + err.message;
-    $('err').style.display = 'block';
-    $('tbody').innerHTML = '<tr><td colspan="3" class="muted">—</td></tr>';
+    wrap.innerHTML = `<section class="panel"><div class="error">Failed to load leaderboard.json: ${esc(err.message)}</div></section>`;
   }
-}
-
-function onHeaderClick(ev){
-  const th = ev.target.closest('[data-sort]');
-  if (!th) return;
-  const key = th.getAttribute('data-sort');
-  if (state.sort.key === key){
-    state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
-  } else {
-    state.sort.key = key;
-    state.sort.dir = key === 'name' ? 'asc' : 'desc';
-  }
-  renderTable();
-}
-
-$('boardSel').addEventListener('change', (e)=> selectBoard(e.target.value));
-$('filter').addEventListener('input', ()=> renderTable());
-$('reloadBtn').addEventListener('click', ()=> loadJSON());
-document.querySelector('thead').addEventListener('click', onHeaderClick);
-
-loadJSON();
+})();
 </script>
 </body>
 </html>

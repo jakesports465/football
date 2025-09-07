@@ -3,1101 +3,250 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Football Fantasy — NFL & NCAA (Tabs)</title>
+<title>Fantasy Leaderboard</title>
 <style>
-  :root{ --bg:#0b0d10; --card:#12161b; --muted:#8ea0b3; --text:#e8eef4; }
+  :root{ --bg:#0b0d10; --card:#12161b; --muted:#8ea0b3; --text:#e8eef4; --br:#1b232d; }
   html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  header{padding:16px 20px;border-bottom:1px solid #1e242c;background:#0f1318;position:sticky;top:0;z-index:50}
-  h1{margin:0;font-size:18px;letter-spacing:.3px}
-  .sub{color:var(--muted);font-size:13px;margin-left:6px}
-  .tabs{display:flex;gap:8px;padding:10px 20px;background:#0f1318;border-bottom:1px solid #1e242c;position:sticky;top:56px;z-index:40}
-  .tab{padding:8px 12px;border:1px solid #243241;border-radius:10px;background:#111822;color:var(--text);cursor:pointer;font-size:13px}
-  .tab[aria-selected="true"]{background:#162231;border-color:#31506a;font-weight:700}
-  .section{display:none}
-  .section.active{display:block}
-  main{max-width:1200px;margin:0 auto;padding:16px 20px 40px}
-  .card{background:var(--card);border:1px solid #1c222a;border-radius:14px;padding:16px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
-  .sep{height:1px;background:#1a2129;margin:12px 0}
-  .small{font-size:12px;color:var(--muted)}
-  .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #26313c;color:var(--muted)}
-  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px}
-  .mono{font-family:ui-monospace, Menlo, Consolas, monospace}
-  .btn{ background:#14202b;border:1px solid #243241;color:var(--text); padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px }
-  .btn.small{padding:6px 8px;font-size:12px}
-  .btn[disabled]{opacity:.6;cursor:not-allowed}
-
-  /* Splash / grid */
-  .gamesGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-  .gameCard{background:#11171e;border:1px solid #1f2a36;border-radius:14px;overflow:hidden;cursor:pointer}
-  .gameCard:active{transform:scale(.998)}
-  .band{height:6px}
-  .gameBody{padding:12px}
-  .teamsRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .team{display:flex;align-items:center;gap:8px;min-width:0}
-  .team img{width:26px;height:26px;border-radius:6px;border:1px solid #1e2732;background:#0f1318}
-  .team .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lockRow{display:flex;gap:8px;margin-top:10px}
-  .lockBtn{flex:1;background:#14202b;border:1px solid #243241;border-radius:10px;color:var(--text);padding:10px 12px;cursor:pointer}
-  .assignWrap{display:flex;gap:6px;align-items:center}
-  .disabledNote{margin-top:6px; font-size:12px; color:#a77; }
-
-  /* Top bar */
-  .topBar{display:none;margin-bottom:16px}
-  .topGrid{display:grid;grid-template-columns:1fr 260px 260px;gap:14px;align-items:start}
-  @media(max-width:980px){.topGrid{grid-template-columns:1fr}}
-  .teamStack{display:flex;flex-direction:column;gap:8px}
-  .teamline{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;background:#0f1318;border:1px solid #1c2430}
-  .teamline .left{display:flex;gap:10px;align-items:center;min-width:0}
-  .teamline img{width:28px;height:28px;border-radius:6px;border:1px solid #1e2732;background:#0d1218}
-  .statusBox,.scoreBox{background:#0f1318;border:1px solid #1c2430;border-radius:12px;padding:12px}
-  .scoreBox{text-align:center}
-  .scoreBox .label{display:inline-block;margin-bottom:6px;border:1px solid #26313c;border-radius:999px;padding:4px 8px;color:var(--muted);font-size:12px}
-  .scoreBox .num{font-size:42px;font-weight:900}
-
-  /* Layout below */
-  .contentGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media(max-width:1060px){.contentGrid{grid-template-columns:1fr}}
-  .log{max-height:260px;overflow:auto;background:#0f1318;border-radius:10px;padding:8px;border:1px solid #1b232d}
-
-  /* Leaderboards */
-  .lbHeaderRow{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .lbRow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px;border-radius:10px;border:1px solid #1c2430;background:#0f1318;margin-bottom:8px;cursor:pointer}
-  .lbRow:active{transform:scale(.998)}
-  .lbTeam{display:flex;gap:8px;align-items:center;min-width:0}
-  .lbTeam img{width:20px;height:20px;border-radius:4px;border:1px solid #1c2330;background:#0d1218}
-  .lbName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lbPts{font-weight:700}
-  .lbMeta{font-size:12px;color:var(--muted)}
-  .lbSmall{font-size:11px;color:var(--muted)}
-  .scoreTag{display:inline-block;margin-left:6px;padding:2px 6px;border:1px solid #26313c;border-radius:6px;font-weight:700}
-
-  /* Players panel */
-  .panel{background:#0f1318;border:1px solid #1c2430;border-radius:12px;padding:12px}
-  .field{display:flex;gap:8px;margin-top:8px}
-  input[type="text"]{flex:1;background:#0b1117;border:1px solid #1b2633;border-radius:8px;color:var(--text);padding:8px}
-  select{background:#0b1117;border:1px solid #1b2633;border-radius:8px;color:var(--text);padding:8px}
-  .pickBadge{display:inline-block;margin-left:8px;padding:2px 6px;border:1px solid #26313c;border-radius:8px;font-size:12px}
-  .pickList{margin-top:6px;font-size:12px;color:var(--muted)}
-  .botTag{margin-left:6px;font-size:10px;color:#a7c0d0;border:1px solid #233141;padding:1px 6px;border-radius:999px}
-
-  /* Collapsible helpers */
-  .collapsed .playersContent { display:none; }
-  .playersToggle[aria-expanded="false"]::after { content:"  ▸"; }
-  .playersToggle[aria-expanded="true"]::after  { content:"  ▾"; }
+  header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--br);background:#0f1318}
+  h1{margin:0;font-size:18px}
+  .sub{color:var(--muted);font-size:13px}
+  main{max-width:900px;margin:0 auto;padding:18px}
+  .panel{background:var(--card);border:1px solid var(--br);border-radius:14px;padding:14px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  select,button{background:#0b1117;border:1px solid #1b2633;border-radius:8px;color:var(--text);padding:8px 10px;font-size:14px}
+  button{cursor:pointer}
+  .muted{color:var(--muted);font-size:12px}
+  .tableWrap{overflow:auto;border:1px solid var(--br);border-radius:12px}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:420px;background:#0f1318}
+  thead th{position:sticky;top:0;background:#101722;border-bottom:1px solid #243241;font-weight:700;text-align:left;padding:10px}
+  tbody td{padding:10px;border-top:1px solid #1b2430}
+  tbody tr:hover{background:#111b24}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .badge{display:inline-block;background:#101722;border:1px solid #253548;border-radius:8px;padding:2px 6px;margin-left:6px;font-size:12px}
+  .sep{height:1px;background:var(--br);margin:12px 0}
+  .error{color:#ffb4b4}
 </style>
 </head>
 <body>
 <header>
-  <h1>Football Fantasy — <span class="sub">NFL & NCAA (Tabs) · Tue→Mon · 3 picks · 25 bots</span></h1>
+  <h1>Leaderboards</h1>
+  <span class="sub" id="updated">—</span>
+  <span style="flex:1"></span>
+  <button id="reloadBtn" title="Reload JSON">Reload</button>
 </header>
 
-<nav class="tabs" role="tablist" aria-label="League Tabs">
-  <button class="tab" id="tab-nfl" role="tab" aria-controls="sec-nfl" aria-selected="true">NFL</button>
-  <button class="tab" id="tab-ncaaf" role="tab" aria-controls="sec-ncaaf" aria-selected="false">NCAA (FBS)</button>
-</nav>
-
-<!-- NFL SECTION -->
-<section id="sec-nfl" class="section active" aria-labelledby="tab-nfl">
-  <main>
-    <div class="card topBar" id="nfl-topBar">
-      <div id="nfl-liveHeader" class="small" style="margin-bottom:6px">—</div>
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap">
-        <select id="nfl-setPickSelect" class="btn small" style="min-width:160px"></select>
-        <button id="nfl-setPickBtn" class="btn small">Add to my picks</button>
-        <span class="small" style="opacity:.8;margin-left:10px">Jump to game:</span>
-        <select id="nfl-jumpGameSelect" class="btn small" style="min-width:260px;max-width:60vw"></select>
-        <button id="nfl-jumpBtn" class="btn small">View</button>
-        <span id="nfl-picksLeft" class="small" style="margin-left:10px;opacity:.8"></span>
+<main>
+  <section class="panel">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <label for="boardSel" class="muted">Board</label>
+        <select id="boardSel"></select>
       </div>
-      <div class="topGrid">
-        <div><div class="teamStack" id="nfl-boardTeams"></div></div>
-        <div>
-          <div class="scoreBox">
-            <div class="label">Fantasy Score (this game)</div>
-            <div id="nfl-fantasyScore" class="num">—</div>
-            <div class="small muted" id="nfl-flowNotes"></div>
-          </div>
-        </div>
-        <div>
-          <div class="statusBox">
-            <div class="pill" style="margin-bottom:6px">Game Status</div>
-            <div class="kv mono">
-              <div>Clock</div><div id="nfl-clock">—</div>
-              <div>Quarter</div><div id="nfl-quarter">—</div>
-              <div>State</div><div id="nfl-state">—</div>
-            </div>
-          </div>
-        </div>
+      <div class="row">
+        <input id="filter" type="text" placeholder="Filter by name" style="background:#0b1117;border:1px solid #1b2633;border-radius:8px;color:var(--text);padding:8px 10px" />
       </div>
     </div>
-
-    <section class="card" id="nfl-splash">
-      <div class="small" id="nfl-gameCount">Loading this week’s slate…</div>
-      <div class="sep"></div>
-
-      <div class="panel" id="nfl-playersSection">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:10px">
-            <strong>Players</strong>
-            <span class="small">(local to this browser)</span>
-            <span class="pickBadge">Pick 3 per week</span>
-          </div>
-          <button id="nfl-playersToggle" class="btn small playersToggle" aria-expanded="true" aria-controls="nfl-playersContent">Collapse</button>
-        </div>
-
-        <div id="nfl-playersContent" class="playersContent" style="margin-top:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">
-            <div class="small muted">Add humans; AI bots auto-pick.</div>
-            <div class="field">
-              <input id="nfl-newPlayerName" type="text" placeholder="Add player name…" />
-              <button class="btn small" id="nfl-addPlayerBtn">Add</button>
-              <button class="btn small" id="nfl-clearWeekBtn" title="Clear picks for this week only">Clear Week</button>
-            </div>
-          </div>
-          <div id="nfl-playersPanel"></div>
-        </div>
-      </div>
-
-      <div class="sep"></div>
-      <div id="nfl-gridNote" class="small muted" style="margin-bottom:8px">Showing NFL games (spread ≤ 30; unknown spreads included). Games that have started are disabled.</div>
-      <div id="nfl-gamesGrid" class="gamesGrid"></div>
-    </section>
-
-    <section id="nfl-tracker" style="display:none">
-      <div class="contentGrid">
-        <section class="card">
-          <div class="lbHeaderRow">
-            <h2 style="margin:0">Leaderboard — Weekly Games (Top 10)</h2>
-            <button id="nfl-toggleAll" class="btn" aria-expanded="false">Show all</button>
-          </div>
-          <div class="small muted" id="nfl-lbNote">Mixed finals + in-progress. Sorted by fantasy score.</div>
-          <div id="nfl-leaderboardCombined"></div>
-        </section>
-
-        <section class="card">
-          <div class="lbHeaderRow">
-            <h2 style="margin:0">Players Leaderboard — This Week (3 picks)</h2>
-            <div class="small muted">Humans + AI · ranks by sum of each player’s 3 game scores.</div>
-          </div>
-          <div id="nfl-playersLB"></div>
-
-          <div class="sep"></div>
-          <div class="lbHeaderRow">
-            <h2 style="margin:0">Players Leaderboard — Season to Date</h2>
-            <div class="small muted">Rank points (1st=10 … floor 0). Prior weeks lock Tue 8am ET.</div>
-          </div>
-          <div id="nfl-playersSeasonLB"></div>
-
-          <div class="sep"></div>
-          <h3 style="margin:0 0 6px 0">Recent Scoring Plays</h3>
-          <div class="log" id="nfl-scoringLog"></div>
-        </section>
-      </div>
-    </section>
-  </main>
-</section>
-
-<!-- NCAA SECTION -->
-<section id="sec-ncaaf" class="section" aria-labelledby="tab-ncaaf">
-  <main>
-    <div class="card topBar" id="ncaaf-topBar">
-      <div id="ncaaf-liveHeader" class="small" style="margin-bottom:6px">—</div>
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap">
-        <select id="ncaaf-setPickSelect" class="btn small" style="min-width:160px"></select>
-        <button id="ncaaf-setPickBtn" class="btn small">Add to my picks</button>
-        <span class="small" style="opacity:.8;margin-left:10px">Jump to game:</span>
-        <select id="ncaaf-jumpGameSelect" class="btn small" style="min-width:260px;max-width:60vw"></select>
-        <button id="ncaaf-jumpBtn" class="btn small">View</button>
-        <span id="ncaaf-picksLeft" class="small" style="margin-left:10px;opacity:.8"></span>
-      </div>
-      <div class="topGrid">
-        <div><div class="teamStack" id="ncaaf-boardTeams"></div></div>
-        <div>
-          <div class="scoreBox">
-            <div class="label">Fantasy Score (this game)</div>
-            <div id="ncaaf-fantasyScore" class="num">—</div>
-            <div class="small muted" id="ncaaf-flowNotes"></div>
-          </div>
-        </div>
-        <div>
-          <div class="statusBox">
-            <div class="pill" style="margin-bottom:6px">Game Status</div>
-            <div class="kv mono">
-              <div>Clock</div><div id="ncaaf-clock">—</div>
-              <div>Quarter</div><div id="ncaaf-quarter">—</div>
-              <div>State</div><div id="ncaaf-state">—</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="sep"></div>
+    <div class="tableWrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="min-width:220px;cursor:pointer" data-sort="name">Name</th>
+            <th class="num" style="width:120px;cursor:pointer" data-sort="total">Points</th>
+            <th class="num" style="width:100px;cursor:pointer" data-sort="picks">Picks</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"><tr><td colspan="3" class="muted">Loading…</td></tr></tbody>
+      </table>
     </div>
-
-    <section class="card" id="ncaaf-splash">
-      <div class="small" id="ncaaf-gameCount">Loading this week’s slate…</div>
-      <div class="sep"></div>
-
-      <div class="panel" id="ncaaf-playersSection">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:10px">
-            <strong>Players</strong>
-            <span class="small">(local to this browser)</span>
-            <span class="pickBadge">Pick 3 per week</span>
-          </div>
-          <button id="ncaaf-playersToggle" class="btn small playersToggle" aria-expanded="true" aria-controls="ncaaf-playersContent">Collapse</button>
-        </div>
-
-        <div id="ncaaf-playersContent" class="playersContent" style="margin-top:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">
-            <div class="small muted">Add humans; AI bots auto-pick.</div>
-            <div class="field">
-              <input id="ncaaf-newPlayerName" type="text" placeholder="Add player name…" />
-              <button class="btn small" id="ncaaf-addPlayerBtn">Add</button>
-              <button class="btn small" id="ncaaf-clearWeekBtn" title="Clear picks for this week only">Clear Week</button>
-            </div>
-          </div>
-          <div id="ncaaf-playersPanel"></div>
-        </div>
-      </div>
-
-      <div class="sep"></div>
-      <div id="ncaaf-gridNote" class="small muted" style="margin-bottom:8px">Showing NCAA FBS games (spread ≤ 30; unknown spreads included). Games that have started are disabled.</div>
-      <div id="ncaaf-gamesGrid" class="gamesGrid"></div>
-    </section>
-
-    <section id="ncaaf-tracker" style="display:none">
-      <div class="contentGrid">
-        <section class="card">
-          <div class="lbHeaderRow">
-            <h2 style="margin:0">Leaderboard — Weekly Games (Top 10)</h2>
-            <button id="ncaaf-toggleAll" class="btn" aria-expanded="false">Show all</button>
-          </div>
-          <div class="small muted" id="ncaaf-lbNote">Mixed finals + in-progress. Sorted by fantasy score.</div>
-          <div id="ncaaf-leaderboardCombined"></div>
-        </section>
-
-        <section class="card">
-          <div class="lbHeaderRow">
-            <h2 style="margin:0">Players Leaderboard — This Week (3 picks)</h2>
-            <div class="small muted">Humans + AI · ranks by sum of each player’s 3 game scores.</div>
-          </div>
-          <div id="ncaaf-playersLB"></div>
-
-          <div class="sep"></div>
-          <div class="lbHeaderRow">
-            <h2 style="margin:0">Players Leaderboard — Season to Date</h2>
-            <div class="small muted">Rank points (1st=10 … floor 0). Prior weeks lock Tue 8am ET.</div>
-          </div>
-          <div id="ncaaf-playersSeasonLB"></div>
-
-          <div class="sep"></div>
-          <h3 style="margin:0 0 6px 0">Recent Scoring Plays</h3>
-          <div class="log" id="ncaaf-scoringLog"></div>
-        </section>
-      </div>
-    </section>
-  </main>
-</section>
+    <div id="note" class="muted" style="margin-top:10px">—</div>
+    <div id="err" class="error" style="margin-top:8px;display:none"></div>
+  </section>
+</main>
 
 <script>
-/* ===== Generic helpers (shared across league instances) ===== */
-const TZ='America/New_York';
-const POLL_MS=15000, LB_POLL_MS=45000, SPREAD_LIMIT=30, INCLUDE_UNKNOWN_SPREADS=true, PICKS_REQUIRED=3;
-const W={TD:3,FG:2,XP:0.5,TWO:1,YARD:0.05,FIRST_DOWN:0.5,SACK:2.5,TFL:1.5,INT:5.5,FR:5,DEF_TD_BONUS:3,SAFETY:6,STOP:2,ST_RETURN_TD:8,BLOCK:5,CLOSE_GAME:10,OVERTIME:15};
-const AI_COUNT=25, BOT_PREFIX='ai-';
-const AI_NAMES=['GridironBot','BlitzBrain','PocketOracle','HailMaryAI','TwoMinuteDrill','ChainMover','RedZoneRobo','SnapCount','NeutralZone','DriveEngine','TurfWizard','SidelineSynth','YACMachine','PlaybookGPT','NickelNerd','SafetyValve','SkyKick','GoalLineGolem','BoothReview','AudibleAI','TempoTactician','OptionOverlord','HotRoute','EdgeRusher','FieldGeneral'];
+/*
+Expected leaderboard.json (flexible):
+{
+  "updated": "2025-09-07T19:30:00Z",
+  "nflWeek":   [ { "name":"Jake", "total":12.5, "picks":3 }, ... ],
+  "ncaaWeek":  [ { "name":"AI Alpha", "total":9.75, "picks":3 }, ... ],
+  "nflSeason": [ { "name":"Jake", "points":42 }, ... ],
+  "ncaaSeason":[ { "name":"AI Alpha", "points":37 }, ... ]
+}
+Notes:
+- Uses "total" or "points" for score (both supported)
+- "picks" is optional (season rows may not have it)
+*/
 
-function nowEST(){return new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));}
-function fmtParts(d,opts){return new Intl.DateTimeFormat('en-US',opts).formatToParts(d).reduce((o,p)=>{o[p.type]=p.value;return o;},{});}
-function addDaysEST(d,days){const p=fmtParts(d,{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});const base=new Date(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`);base.setDate(base.getDate()+days);return new Date(base.toLocaleString('en-US',{timeZone:TZ}));}
-const fmtDate=d=>d.split('-').join('');
-function timeout(ms){return new Promise(r=>setTimeout(r,ms));}
-async function safeFetch(url,opts={},retries=2){
-  for(let i=0;i<=retries;i++){
-    try{const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),15000);const res=await fetch(url,{...opts,signal:ctl.signal});clearTimeout(t);if(!res.ok) throw new Error('HTTP '+res.status);return await res.json();}
-    catch(e){ if(i===retries) throw e; await timeout(700*(i+1)); }
-  }
+const FILE = 'leaderboard.json'; // same directory
+const $ = (id)=>document.getElementById(id);
+const state = {
+  raw:null,
+  boards:[],          // [{key,label}]
+  rows:[],            // current board rows
+  sort:{ key:'total', dir:'desc' }
+};
+
+const LABELS = {
+  nflWeek:'NFL — This Week',
+  ncaaWeek:'NCAA — This Week',
+  nflSeason:'NFL — Season',
+  ncaaSeason:'NCAA — Season'
+};
+
+function fmtPoints(x){
+  if (typeof x !== 'number' || !isFinite(x)) return '0.00';
+  return x.toFixed(2);
 }
 
-/* Robust logo helpers */
-function cdnNFL(t){
-  return t?.logos?.[0]?.href
-      || (t?.abbreviation ? `https://a.espncdn.com/i/teamlogos/nfl/500/${t.abbreviation}.png` : null);
-}
-function cdnNCAAF(t){
-  if(!t) return null;
-  const direct=(t.logos && t.logos[0] && t.logos[0].href) || t.logo || null;
-  if(direct) return direct.replace(/^http:/,'https:');
-  if(t.id) return `https://a.espncdn.com/i/teamlogos/ncaa/500/${t.id}.png`;
-  if(t.abbreviation) return `https://a.espncdn.com/i/teamlogos/ncaa/500/${t.abbreviation}.png`;
-  return null;
+function normalizeRows(list){
+  if (!Array.isArray(list)) return [];
+  return list.map(r=>({
+    name: String(r.name ?? r.player ?? '—'),
+    total: Number((r.total ?? r.points ?? 0)) || 0,
+    picks: (r.picks ?? null)
+  }));
 }
 
-/* ===== League factory ===== */
-function createLeagueApp(cfg){
-  // cfg: { keyPrefix, label, nodes: {…}, api:{…}, logoFn, aiBias:{…}, uiCollapseKey, sectionId, ids:{awayScore,homeScore} }
-  const S = {
-    ...cfg,
-    state:{
-      pollTimer:null, lbTimer:null, selected:null,
-      lastScoringIds:new Set(), showAll:false, lastLeaderboardRows:[],
-      players:[], picks:{}, weeklyEvents:[], startedSet:new Set(), gameScoreCache:new Map()
+function detectBoards(json){
+  const keys = ['nflWeek','ncaaWeek','nflSeason','ncaaSeason'];
+  const out = [];
+  for (const k of keys){
+    if (Array.isArray(json[k]) && json[k].length){
+      out.push({key:k, label:LABELS[k]});
     }
-  };
+  }
+  // if nothing matched, but json is an array, treat as a generic board
+  if (!out.length && Array.isArray(json)){
+    return [{key:'_generic', label:'Leaderboard'}];
+  }
+  return out;
+}
 
-  /* Storage helpers */
-  const Store={
-    loadPlayers(){return JSON.parse(localStorage.getItem(cfg.keyPrefix+'.players')||'[]');},
-    savePlayers(v){localStorage.setItem(cfg.keyPrefix+'.players',JSON.stringify(v));},
-    loadPicks(){return JSON.parse(localStorage.getItem(cfg.keyPrefix+'.picks')||'{}');},
-    savePicks(v){localStorage.setItem(cfg.keyPrefix+'.picks',JSON.stringify(v));},
-  };
+function setUpdated(ts){
+  try{
+    if (!ts) { $('updated').textContent = 'Updated: —'; return; }
+    const d = new Date(ts);
+    $('updated').textContent = 'Updated: ' + d.toLocaleString([], {hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});
+  }catch(e){ $('updated').textContent = 'Updated: —'; }
+}
 
-  /* Week (Tue 8am ET anchor) */
-  function weekKey(){
-    const n=nowEST(); const wd=n.getDay(); const daysSinceTue=(wd-2+7)%7;
-    const thisTue=addDaysEST(n,-daysSinceTue);
-    const parts=fmtParts(n,{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-    const after8 = Number(parts.hour)>=8 || daysSinceTue>0;
-    const anchor = after8 ? thisTue : addDaysEST(thisTue,-7);
-    const k=fmtParts(anchor,{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});
-    return `${k.year}-${k.month}-${k.day}-Tue08ET`;
-  }
-  const WK = weekKey();
-  function weekDateList(){ // Tue..Mon
-    const n=nowEST(); const wd=n.getDay(); const daysSinceTue=(wd-2+7)%7; const tue=addDaysEST(n,-daysSinceTue);
-    const dates=[]; for(let i=0;i<7;i++){ const d=addDaysEST(tue,i); const p=fmtParts(d,{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}); dates.push(`${p.year}-${p.month}-${p.day}`);}
-    const pTue=fmtParts(tue,{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}); const mon=addDaysEST(tue,6); const pMon=fmtParts(mon,{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});
-    return {start:dates[0], end:dates[6], list:dates, pretty:`${pTue.month}/${pTue.day} → ${pMon.month}/${pMon.day}`};
-  }
-
-  /* DOM nodes */
-  const N = cfg.nodes;
-
-  /* UI helpers */
-  function showTopBar(on){ N.topBar.style.display= on?'block':'none'; }
-  function showSplash(on){ N.splash.style.display= on?'block':'none'; }
-  function showTracker(on){ N.tracker.style.display= on?'block':'none'; }
-  function setErr(msg){ N.err && (N.err.textContent=msg, N.err.style.display='block'); }
-  function clearErr(){ N.err && (N.err.style.display='none'); }
-
-  /* Players + AI */
-  const isBot = p=>p?.id?.startsWith(BOT_PREFIX);
-  function ensureAIPlayers(){
-    const have = new Set((S.state.players||[]).filter(isBot).map(p=>p.name));
-    const toAdd = AI_NAMES.slice(0,AI_COUNT).filter(n=>!have.has(n));
-    toAdd.forEach((name)=>{ const id=`${BOT_PREFIX}${Math.random().toString(36).slice(2,9)}`; S.state.players.push({id,name}); });
-  }
-  function currentPlayerId(){ return N.setPickSelect?.value || (S.state.players[0]?.id||null); }
-  function currentPickCount(pid){ const wk=S.state.picks[WK]||{}; const arr=(wk[pid]?.gameIds)||[]; return arr.length; }
-  function updatePicksLeftBadge(){
-    const pid=currentPlayerId(); if(!pid){ N.picksLeft.textContent=''; return; }
-    const left=Math.max(PICKS_REQUIRED - currentPickCount(pid), 0);
-    N.picksLeft.textContent=`${left} pick${left===1?'':'s'} left this week`;
-  }
-  function refreshTopBarPlayerSelect(){
-    N.setPickSelect.innerHTML='';
-    (S.state.players||[]).forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=isBot(p)?`${p.name} (AI)`:p.name; N.setPickSelect.appendChild(o); });
-    updatePicksLeftBadge();
-  }
-  function renderPlayers(){
-    const panel=N.playersPanel; panel.innerHTML='';
-    if(!S.state.players.length){ panel.innerHTML='<div class="small muted">No players yet. Add some above.</div>'; refreshTopBarPlayerSelect(); return; }
-    S.state.players.forEach(p=>{
-      const wk=S.state.picks[WK]||{}; const arr=(wk[p.id]?.gameIds)||[];
-      const div=document.createElement('div');
-      div.style.cssText='display:flex;justify-content:space-between;align-items:center;border:1px solid #1c2430;background:#0f1318;padding:8px;border-radius:10px;margin-bottom:8px';
-      const summary = arr.length ? arr.map(id=>shortLabelFor(id)).join(' · ') : (isBot(p)?'AI will auto-pick':'No picks yet');
-      div.innerHTML=`
-        <div>
-          <strong>${p.name}</strong>${isBot(p)?'<span class="botTag">AI</span>':''}
-          <span class="pickBadge mono">${arr.length}/${PICKS_REQUIRED}</span>
-          <div class="pickList">${summary}</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          ${isBot(p)?'' : '<button class="btn small" data-pick="'+p.id+'">Assign next click</button>'}
-          <button class="btn small" data-del="${p.id}">Del</button>
-        </div>`;
-      panel.appendChild(div);
-    });
-    panel.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
-      const id=b.dataset.del; S.state.players=S.state.players.filter(x=>x.id!==id);
-      Object.keys(S.state.picks||{}).forEach(week=>{ if(S.state.picks[week]) delete S.state.picks[week][id]; });
-      Store.savePlayers(S.state.players); Store.savePicks(S.state.picks);
-      renderPlayers(); renderPlayersLeaderboard(); renderPlayersSeasonLeaderboard(); refreshTopBarPlayerSelect();
-    });
-    panel.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{
-      const id=b.dataset.pick;
-      N.root.querySelectorAll('.assignSelect').forEach(sel=>{ sel.value=id; sel.classList.add('pulse'); setTimeout(()=>sel.classList.remove('pulse'),800); });
-      N.setPickSelect.value=id; updatePicksLeftBadge();
-    });
-    refreshTopBarPlayerSelect();
-  }
-  N.addPlayerBtn?.addEventListener('click',()=>{
-    const name=(N.newPlayerName.value||'').trim(); if(!name) return;
-    const id='p'+Math.random().toString(36).slice(2,9);
-    S.state.players.push({id,name}); N.newPlayerName.value='';
-    Store.savePlayers(S.state.players); renderPlayers(); renderPlayersLeaderboard(); renderPlayersSeasonLeaderboard();
+function fillBoardSelector(){
+  const sel = $('boardSel');
+  sel.innerHTML = '';
+  state.boards.forEach((b,i)=>{
+    const o = document.createElement('option');
+    o.value = b.key;
+    o.textContent = b.label;
+    sel.appendChild(o);
   });
-  N.clearWeekBtn?.addEventListener('click',()=>{
-    S.state.picks[WK]={}; Store.savePicks(S.state.picks);
-    renderPlayers(); renderPlayersLeaderboard(); renderPlayersSeasonLeaderboard(); updatePicksLeftBadge();
-  });
+}
 
-  // Collapsible panel
-  function applyPlayersCollapseState(force) {
-    const key = cfg.uiCollapseKey;
-    let collapsed = (force !== undefined) ? !!force : (localStorage.getItem(key)==='1');
-    if (collapsed) {
-      N.playersSection.classList.add('collapsed');
-      N.playersToggle.setAttribute('aria-expanded','false');
-      N.playersToggle.textContent = 'Expand';
+function applyFilter(rows){
+  const q = ($('filter').value || '').trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter(r => r.name.toLowerCase().includes(q));
+}
+
+function renderTable(){
+  const tbody = $('tbody');
+  const rows = applyFilter(state.rows).slice();
+  const {key,dir} = state.sort;
+
+  rows.sort((a,b)=>{
+    let av = a[key], bv = b[key];
+    if (key === 'name'){
+      av = String(av).toLowerCase();
+      bv = String(bv).toLowerCase();
+      if (av < bv) return dir==='asc' ? -1 : 1;
+      if (av > bv) return dir==='asc' ? 1 : -1;
+      return 0;
     } else {
-      N.playersSection.classList.remove('collapsed');
-      N.playersToggle.setAttribute('aria-expanded','true');
-      N.playersToggle.textContent = 'Collapse';
+      // numeric
+      return dir==='asc' ? (av - bv) : (bv - av);
     }
-    localStorage.setItem(key, collapsed ? '1' : '0');
-  }
-  N.playersToggle?.addEventListener('click', () => {
-    const isOpen = N.playersToggle.getAttribute('aria-expanded') === 'true';
-    applyPlayersCollapseState(isOpen);
   });
 
-  // Picks
-  function ensureWeekPlayer(pid){
-    if(!S.state.picks[WK]) S.state.picks[WK]={};
-    if(!S.state.picks[WK][pid]) S.state.picks[WK][pid]={gameIds:[], lockedAt:new Date().toISOString()};
-  }
-  function pickContains(pid, gameId){ ensureWeekPlayer(pid); return S.state.picks[WK][pid].gameIds.includes(gameId); }
-  function addPick(pid, game){
-    ensureWeekPlayer(pid);
-    const arr=S.state.picks[WK][pid].gameIds;
-    if(arr.length>=PICKS_REQUIRED) return false;
-    const gid=game.gameId||game.id; if(pickContains(pid,gid)) return false;
-    arr.push(gid);
-    Store.savePicks(S.state.picks);
-    renderPlayers(); renderPlayersLeaderboard(); renderPlayersSeasonLeaderboard(); updatePicksLeftBadge();
-    return true;
+  tbody.innerHTML = '';
+  if (!rows.length){
+    tbody.innerHTML = '<tr><td colspan="3" class="muted">No entries.</td></tr>';
+    return;
   }
 
-  // AI
-  function hasGameStarted(g){ if(g.state && g.state!=='pre') return true; const now=nowEST().getTime(), start=new Date(g.start).getTime(); return now>=start; }
-  function gameHeuristicScore(g){
-    const spread = (g.spread==null)? 8.0 : Math.abs(g.spread);
-    const kick = new Date(g.start);
-    const hourET = Number(new Intl.DateTimeFormat('en-US',{timeZone:TZ,hour:'2-digit',hour12:false}).format(kick));
-    const weekday = new Intl.DateTimeFormat('en-US',{timeZone:TZ,weekday:'short'}).format(kick);
-    const primetime = (hourET>=19 && hourET<=23) ? cfg.aiBias.primetimeBonus : 0;
-    const early = cfg.aiBias.earlyBonusDays.includes(weekday) && hourET>=cfg.aiBias.earlyHours[0] && hourET<=cfg.aiBias.earlyHours[1] ? cfg.aiBias.earlyBonus : 0;
-    const rnd = (Math.random()-0.5)*2*cfg.aiBias.randomness;
-    const closeness = cfg.aiBias.weightSpread*(10 - Math.min(spread,10));
-    return closeness + primetime + early + rnd;
+  for (const r of rows){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(r.name)}${typeof r.picks === 'number' ? ` <span class="badge">${r.picks}/3</span>` : ''}</td>
+      <td class="num">${fmtPoints(r.total)}</td>
+      <td class="num">${typeof r.picks === 'number' ? r.picks : '—'}</td>
+    `;
+    tbody.appendChild(tr);
   }
-  function aiPickSetForWeek(games){
-    return games.filter(g=>!hasGameStarted(g)).map(g=>({...g,_score:gameHeuristicScore(g)})).sort((a,b)=>b._score-a._score);
-  }
-  async function ensureAIPicks(){
-    const aiPlayers = (S.state.players||[]).filter(isBot); if(!aiPlayers.length) return;
-    const ranked = aiPickSetForWeek(S.state.weeklyEvents); if(!ranked.length) return;
-    const baseOffset = Math.floor(Math.random()*4);
-    aiPlayers.forEach((p, idx)=>{
-      ensureWeekPlayer(p.id);
-      const have=S.state.picks[WK][p.id].gameIds;
-      if(have.length>=PICKS_REQUIRED) return;
-      let cursor = baseOffset + idx;
-      while(have.length<PICKS_REQUIRED && cursor<ranked.length){
-        const gid=ranked[cursor].id;
-        if(!have.includes(gid)) have.push(gid);
-        cursor += (2 + Math.floor(Math.random()*3));
-      }
-    });
-    Store.savePicks(S.state.picks); renderPlayers(); renderPlayersLeaderboard(); renderPlayersSeasonLeaderboard();
-  }
-  function shortLabelFor(eventId){
-    const g=S.state.weeklyEvents.find(x=>x.id===eventId); if(!g) return `#${eventId}`; return `${g.away.name} @ ${g.home.name}`;
-  }
-
-  /* API wrappers */
-  async function loadWeekGames(){
-    clearErr();
-    N.gamesGrid.innerHTML=''; N.gameCount.textContent='Loading week…';
-    S.state.lastScoringIds.clear(); if(S.state.pollTimer) clearInterval(S.state.pollTimer); if(S.state.lbTimer) clearInterval(S.state.lbTimer);
-    N.fantasyScore.textContent='—'; showSplash(true); showTracker(false); showTopBar(false);
-    S.state.weeklyEvents=[]; S.state.startedSet.clear();
-
-    try{
-      const {start,end,list,pretty} = weekDateList();
-      const sbs = await Promise.all(list.map(d => cfg.api.scoreboard(d)));
-      const idSeen=new Set(); const base=[];
-
-      sbs.forEach((sb,idx)=>{
-        for(const e of (sb?.events||[])){
-          if(idSeen.has(e.id)) continue; idSeen.add(e.id);
-          const comp=e.competitions?.[0]||{}, cs=comp.competitors||[];
-          const home=cs.find(c=>c.homeAway==='home')||{}, away=cs.find(c=>c.homeAway==='away')||{};
-          const state = comp.status?.type?.state || e.status?.type?.state || 'pre';
-          if(state!=='pre') S.state.startedSet.add(e.id);
-          base.push({
-            id:e.id, competitionId:comp.id||e.id, dateISO=list[idx], start:e.date, state,
-            home:{name:home.team?.shortDisplayName||home.team?.displayName, id:home.team?.id, abbr:home.team?.abbreviation||'', logo:cfg.logoFn(home.team), color:home.team?.color},
-            away:{name:away.team?.shortDisplayName||away.team?.displayName, id:away.team?.id, abbr:away.team?.abbreviation||'', logo:cfg.logoFn(away.team), color:away.team?.color}
-          });
-        }
-      });
-
-      if(!base.length){ N.gameCount.textContent=`No ${cfg.label} games found for this Tue→Mon window.`; return; }
-
-      const withSpreads=await Promise.all(base.map(async g=>{
-        try{
-          const idx=await cfg.api.oddsIndex(g.id); let spread=null;
-          if(idx?.items?.length){
-            const ref=idx.items[0].$ref||idx.items[0].href||idx.items[0];
-            if(ref){
-              const od=await safeFetch(ref);
-              let s=null;
-              if(od?.details?.spread) s=Number(od.details.spread);
-              else if(od?.spread) s=Number(od.spread);
-              else if(od?.awayTeamOdds?.spread) s=Number(od.awayTeamOdds.spread);
-              else if(od?.homeTeamOdds?.spread) s=Number(od.homeTeamOdds.spread);
-              if(s!=null && !Number.isNaN(s)) spread=Math.abs(s);
-            }
-          }
-          return {...g, spread};
-        }catch{ return {...g, spread:null}; }
-      }));
-
-      const eligible=withSpreads.filter(g=> g.spread==null ? INCLUDE_UNKNOWN_SPREADS : g.spread<=SPREAD_LIMIT);
-      S.state.weeklyEvents = eligible.slice();
-
-      N.gridNote.textContent=`Showing ${cfg.label} games for ${start} → ${end} (Tue→Mon ${pretty}) · spread ≤ ${SPREAD_LIMIT}${INCLUDE_UNKNOWN_SPREADS?' · unknown spreads included':''}.`;
-      eligible.sort((a,b)=> new Date(a.start) - new Date(b.start));
-      renderGrid(eligible);
-
-      refreshJumpSelector();
-      N.gameCount.textContent=`${eligible.length} eligible game${eligible.length===1?'':'s'} this week`;
-
-      ensureAIPlayers(); Store.savePlayers(S.state.players); renderPlayers();
-      await ensureAIPicks();
-
-      const saved=JSON.parse(localStorage.getItem(cfg.keyPrefix+'.locked')||'null'); if(saved) lockPick(saved);
-
-      refreshLeaderboardCombined(); S.state.lbTimer=setInterval(refreshLeaderboardCombined, LB_POLL_MS);
-    }catch(e){ console.error(e); setErr('Failed to load week data.'); N.gameCount.textContent='Load failed.'; }
-  }
-
-  function renderGrid(games){
-    N.gamesGrid.innerHTML='';
-    for(const g of games){
-      const band=`linear-gradient(90deg, ${g.away.color? '#'+g.away.color : '#1a232d'} 0%, ${g.home.color? '#'+g.home.color : '#26313c'} 100%)`;
-      const kickoff=new Date(g.start).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
-      const started = hasGameStarted(g);
-      const card=document.createElement('div'); card.className='gameCard'; card.setAttribute('role','button');
-      card.title= started ? 'Game started — locked' : 'View game';
-      card.innerHTML=`<div class="band" style="background:${band}"></div>
-        <div class="gameBody">
-          <div class="teamsRow">
-            <div class="team">${g.away.logo?`<img src="${g.away.logo}" alt="">`:''}<div class="name">${g.away.name}</div></div>
-            <div class="mono" style="opacity:.8">@</div>
-            <div class="team" style="justify-content:flex-end">${g.home.logo?`<img src="${g.home.logo}" alt="">`:''}<div class="name">${g.home.name}</div></div>
-          </div>
-          <div class="small mono" style="margin-top:6px;opacity:.8">${g.dateISO} · Spread: ${g.spread==null?'—':g.spread.toFixed(1)} · Kick: ${kickoff}</div>
-
-          <div class="lockRow">
-            <button class="lockBtn"${started?' disabled':''}>🔒 Add to pick</button>
-            <button class="btn small viewBtn">Open</button>
-          </div>
-
-          <div class="assignWrap" style="margin-top:8px">
-            <select class="assignSelect"><option value="">Assign to player…</option></select>
-            <button class="btn small assignBtn"${started?' disabled':''}>Assign</button>
-          </div>
-          ${started?'<div class="disabledNote mono">Locked (already started)</div>':''}
-        </div>`;
-
-      const sel=card.querySelector('.assignSelect');
-      (S.state.players||[]).forEach(p=>{ const opt=document.createElement('option'); opt.value=p.id; opt.textContent=isBot(p)?`${p.name} (AI)`:p.name; sel.appendChild(opt); });
-
-      card.querySelector('.viewBtn').addEventListener('click',(ev)=>{ev.stopPropagation(); lockPick({gameId:g.id, ...g});});
-      card.addEventListener('click',(ev)=>{
-        if(ev.target.closest('button') || ev.target.closest('select')) return;
-        lockPick({gameId:g.id, ...g});
-      });
-      const lockBtn=card.querySelector('.lockBtn');
-      lockBtn.addEventListener('click',async (ev)=>{
-        ev.stopPropagation();
-        if(await gameLocked(g.id,g.start)) return;
-        const pid=currentPlayerId(); if(!pid){alert('Add/select a player first.');return;}
-        const ok=addPick(pid,{gameId:g.id, ...g});
-        if(!ok){ alert('Already picked or you’ve reached 3 picks.'); }
-        renderGrid(games);
-      });
-      card.querySelector('.assignBtn').addEventListener('click',async (ev)=>{
-        ev.stopPropagation();
-        const pid=sel.value; if(!pid) return;
-        if(await gameLocked(g.id,g.start)) return;
-        const ok=addPick(pid,{gameId:g.id, ...g});
-        if(!ok){ alert('Already picked or player reached 3 picks.'); }
-        sel.value='';
-        renderGrid(games);
-      });
-
-      N.gamesGrid.appendChild(card);
-    }
-  }
-  async function gameLocked(eventId,start){
-    try{
-      if(S.state.startedSet.has(eventId)) return true;
-      const sm=await cfg.api.summary(eventId);
-      const st=sm?.header?.competitions?.[0]?.status?.type?.state || 'pre';
-      if(st!=='pre'){ S.state.startedSet.add(eventId); alert('That game already started — pick is locked.'); return true; }
-      if(nowEST().getTime()>=new Date(start).getTime()){ S.state.startedSet.add(eventId); alert('That game already started — pick is locked.'); return true; }
-      return false;
-    }catch{
-      if(nowEST().getTime()>=new Date(start).getTime()){ S.state.startedSet.add(eventId); alert('That game already started — pick is locked.'); return true; }
-      return false;
-    }
-  }
-
-  function refreshJumpSelector(){
-    N.jumpSelect.innerHTML='';
-    S.state.weeklyEvents.slice().sort((a,b)=>new Date(a.start)-new Date(b.start)).forEach(g=>{
-      const o=document.createElement('option');
-      o.value=g.id;
-      o.textContent=`${new Date(g.start).toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'})} — ${g.away.name} @ ${g.home.name}`;
-      N.jumpSelect.appendChild(o);
-    });
-  }
-  N.jumpBtn.addEventListener('click',()=>{
-    const id = N.jumpSelect?.value; if(!id) return;
-    const g=S.state.weeklyEvents.find(x=>x.id===id);
-    if(g){ lockPick({gameId:g.id, ...g}); }
-  });
-
-  function lockPick(g){
-    S.state.selected=g; localStorage.setItem(cfg.keyPrefix+'.locked', JSON.stringify(g)); S.state.lastScoringIds.clear();
-    const awayName=g.away?.name||'Away', homeName=g.home?.name||'Home';
-    N.liveHeader.textContent=`${awayName} @ ${homeName}${g.spread!=null?` (spread ${Number(g.spread).toFixed(1)})`:''}`;
-
-    const row=(side,color,id)=>`<div class="teamline" style="border-left:6px solid ${color? '#'+color : '#2a3643'}">
-        <div class="left">${side?.logo?`<img src="${side.logo}" alt="">`:''}<div style="font-weight:700">${side?.name||''}</div></div>
-        <div id="${id}" style="font-weight:800">—</div></div>`;
-    N.boardTeams.innerHTML=row(g.away,g.away?.color,cfg.ids.awayScore) + row(g.home,g.home?.color,cfg.ids.homeScore);
-
-    showTopBar(true); showSplash(false); showTracker(true);
-    if(S.state.pollTimer) clearInterval(S.state.pollTimer);
-    refreshOnce(); S.state.pollTimer=setInterval(()=>{ if(sectionVisible(cfg.sectionId)) refreshOnce(); }, POLL_MS);
-    refreshJumpSelector();
-    if(N.jumpSelect && g.gameId){
-      const opt = [...N.jumpSelect.options].find(o=>o.value===String(g.gameId));
-      if(opt) N.jumpSelect.value=opt.value;
-    }
-    updatePicksLeftBadge();
-  }
-
-  N.setPickBtn.addEventListener('click',async ()=>{
-    if(!S.state.selected) return;
-    const pid=currentPlayerId(); if(!pid){alert('Add/select a player first.');return;}
-    if(await gameLocked(S.state.selected.gameId||S.state.selected.id, S.state.selected.start)) return;
-    const ok=addPick(pid, S.state.selected);
-    if(!ok){ alert('Already picked or you’ve reached 3 picks.'); }
-  });
-
-  async function refreshOnce(){
-    if(!S.state.selected) return;
-    try{
-      const gameId = S.state.selected.gameId || S.state.selected.id;
-      const [summary, box, pbp] = await Promise.all([cfg.api.summary(gameId), cfg.api.box(gameId), cfg.api.pbp(gameId)]);
-      const comp=summary?.header?.competitions?.[0]||{}, status=comp.status||{};
-      const home=comp.competitors?.find(c=>c.homeAway==='home'); const away=comp.competitors?.find(c=>c.homeAway==='away');
-      const homeScore=Number(home?.score??0), awayScore=Number(away?.score??0);
-      const hs=document.getElementById(cfg.ids.homeScore), as=document.getElementById(cfg.ids.awayScore);
-      if(hs) hs.textContent=homeScore; if(as) as.textContent=awayScore;
-
-      N.clock.textContent=status?.displayClock ?? '—';
-      N.quarter.textContent=status?.period ?? '-';
-      N.state.textContent=status?.type?.description || status?.type?.shortDetail || '—';
-
-      let totals={yards:0,firstDowns:0,tfl:0,sacks:0,thirdMade:0,thirdAtt:0,fourthMade:0,fourthAtt:0,safeties:0};
-      function add(a,k,f){const s=a.find(s=>s.name===k||s.abbreviation===k);return s?f(s):0;}
-      for(const side of (summary?.boxscore?.teams||[])){
-        const st=side?.statistics||[];
-        const ry=add(st,'rushingYards', s=>Number(s.value??s.displayValue??0));
-        const py=add(st,'netPassingYards', s=>Number(s.value??s.displayValue??0));
-        totals.yards+=(ry||0)+(py||0);
-        totals.firstDowns+=add(st,'firstDowns', s=>Number(s.value??s.displayValue??0));
-        totals.sacks+=add(st,'sacks', s=>{const dv=(s.displayValue||'').split('-')[0];const n=Number(s.value??dv);return isNaN(n)?Number(dv)||0:n;});
-        totals.tfl+=add(st,'tacklesForLoss', s=>Number(s.value??s.displayValue??0));
-        const th=add(st,'thirdDownEff', s=>(s.displayValue||'0-0')); const [tm,ta]=String(th).split('-').map(x=>Number(x)||0); totals.thirdMade+=tm; totals.thirdAtt+=ta;
-        const fh=add(st,'fourthDownEff', s=>(s.displayValue||'0-0')); const [fm,fa]=String(fh).split('-').map(x=>Number(x)||0); totals.fourthMade+=fm; totals.fourthAtt+=fa;
-        totals.safeties += add(st,'safeties', s=>Number(s.value??s.displayValue??0));
-      }
-      const stopsFromEff=(totals.thirdAtt-totals.thirdMade)+(totals.fourthAtt-totals.fourthMade);
-
-      let TD=0,FG=0,XP=0,TWO=0,stReturnTD=0,blocks=0,defTdBonus=0,safeties=(totals.safeties||0),newLog=[];
-      const scoringPlays=summary?.scoringPlays||[];
-      for(const sp of scoringPlays){
-        if(!S.state.lastScoringIds.has(sp.id)){const desc=sp.text||sp.description||'',time=sp.clock?.displayValue||'',q=sp.period?.number?`Q${sp.period.number}`:'';newLog.push(`[${q} ${time}] ${desc}`);}
-        const d=(sp.text||sp.description||'').toLowerCase(), t=(sp.type?.text||sp.scoringType||'').toLowerCase();
-        if(t.includes('touchdown')||d.includes('touchdown')){TD++; if(d.includes('punt return')||d.includes('kickoff return')||d.includes('kick return')) stReturnTD++; if(d.includes('interception return')||d.includes('fumble return')||d.includes('blocked punt')||d.includes('blocked kick')||d.includes('fumble recovered in end zone')) defTdBonus++; if(d.includes('safety')) safeties++;}
-        else if(t.includes('field goal')||d.includes('field goal')) FG++;
-        else if(t.includes('extra point')||d.includes('extra point is good')) XP++;
-        else if(t.includes('two-point')||d.includes('two-point')){ if(d.includes('successful')||d.includes('is good')||d.includes('good')) TWO++; }
-        if(d.includes('blocked')) blocks++;
-      }
-      for(const l of newLog.reverse()){const div=document.createElement('div'); div.textContent=l; N.scoringLog.prepend(div);} scoringPlays.forEach(sp=>S.state.lastScoringIds.add(sp.id));
-
-      let pbpPlays=[]; try{const gp=pbp?.gamepackageJSON; const collect=a=>{if(Array.isArray(a)) a.forEach(d=>{if(Array.isArray(d.plays)) pbpPlays.push(...d.plays);});}; collect(gp?.drives?.previous); collect(gp?.drives?.current);}catch{}
-      let sacksP=0,tflP=0,stopsP=0,fdP=0,intP=0,frP=0,defTDP=0,stTDP=stReturnTD,safetyP=0,blockP=blocks;
-      for(const p of pbpPlays){
-        const t=(p?.text||'').toLowerCase(); if(t.includes('sacked')) sacksP++; if(t.includes('tackle for loss')) tflP++;
-        const dn=p.down, gotFirst=t.includes('first down')||/1st and/i.test(t), tod=t.includes('turnover on downs'), punt=t.startsWith('punt'), fg=(t.includes('field goal')&&(t.includes('is good')||t.includes('missed')||t.includes('blocked')));
-        if((dn===3||dn===4)&&!gotFirst&&(tod||punt||fg)) stopsP++;
-        if(t.includes('first down')) fdP++;
-        if(t.includes('intercepted')){intP++; if(t.includes('for a touchdown')) defTDP++;}
-        if(t.includes('fumble')){if(t.includes('recovered')) frP++; if(t.includes('for a touchdown')||t.includes('recovered in end zone')) defTDP++;}
-        if((t.includes('punt')||t.includes('kickoff')||t.includes('kick return'))&&t.includes('returns')&&t.includes('for a touchdown')) stTDP++;
-        if(t.includes('safety')) safetyP++;
-        if(t.includes('blocked punt')||t.includes('blocked field goal')||(t.includes('blocked')&&t.includes('kick'))) blockP++;
-      }
-      if(!totals.sacks || totals.sacks<sacksP) totals.sacks=sacksP;
-      if(!totals.tfl   || totals.tfl<tflP)     totals.tfl=tflP;
-      if(!totals.firstDowns) totals.firstDowns=fdP;
-
-      const stops=Math.max(stopsFromEff,stopsP);
-      const INT=intP, FR=frP, defTDB=defTDP, stTDB=Math.max(stReturnTD,stTDP), safetiesF=Math.max(safeties,safetyP,totals.safeties||0), blocksF=Math.max(blocks,blockP);
-      let xpP=0,twoP=0; for(const p of pbpPlays){const t=(p.text||'').toLowerCase(); if(t.includes('extra point')&&(t.includes('good')||t.includes('is good'))) xpP++; if(t.includes('two-point')&&(t.includes('successful')||t.includes('good'))) twoP++;}
-      const XPf=Math.max(XP,xpP), TWOf=Math.max(TWO,twoP);
-
-      const offensePts=TD*W.TD+FG*W.FG+XPf*W.XP+TWOf*W.TWO+totals.yards*W.YARD+totals.firstDowns*W.FIRST_DOWN;
-      const defensePts=totals.sacks*W.SACK+totals.tfl*W.TFL+INT*W.INT+FR*W.FR+defTDB*W.DEF_TD_BONUS+safetiesF*W.SAFETY+stops*W.STOP;
-
-      const isFinal=(status?.type?.state==='post'||status?.type?.completed===true), margin=Math.abs(homeScore-awayScore);
-      const closeBonus=(isFinal && margin<=7)?W.CLOSE_GAME:0, otBonus=((status?.period||0)>4 && isFinal)?W.OVERTIME:0;
-      const totalScore=offensePts+defensePts+closeBonus+otBonus;
-
-      N.fantasyScore.textContent=totalScore.toFixed(2);
-      N.flowNotes.textContent=`Close game: ${closeBonus?'Yes (+10)':'No'}, OT: ${otBonus?'Yes (+15)':'No'}`;
-    }catch(e){ console.error(e); setErr('Live refresh failed. Retrying…'); }
-  }
-
-  async function computeFantasyForGame(eventId){
-    const cached=S.state.gameScoreCache.get(eventId);
-    if(cached && cached.final) return cached;
-    try{
-      const [summary, box, pbp] = await Promise.all([cfg.api.summary(eventId), cfg.api.box(eventId), cfg.api.pbp(eventId)]);
-      const comp=summary?.header?.competitions?.[0]||{}, status=comp.status||{};
-      const home=comp.competitors?.find(c=>c.homeAway==='home'); const away=comp.competitors?.find(c=>c.homeAway==='away');
-      const homeName=home?.team?.shortDisplayName||home?.team?.displayName||'Home';
-      const awayName=away?.team?.shortDisplayName||away?.team?.displayName||'Away';
-      const homeLogo=cfg.logoFn(home?.team), awayLogo=cfg.logoFn(away?.team);
-      const homePts=Number(home?.score ?? 0), awayPts=Number(away?.score ?? 0);
-
-      let totals={yards:0,firstDowns:0,tfl:0,sacks:0,thirdMade:0,thirdAtt:0,fourthMade:0,fourthAtt:0,safeties:0};
-      function add(a,k,f){const s=a.find(s=>s.name===k||s.abbreviation===k);return s?f(s):0;}
-      for(const side of (summary?.boxscore?.teams||[])){
-        const st=side?.statistics||[]; const ry=add(st,'rushingYards', s=>Number(s.value??s.displayValue??0));
-        const py=add(st,'netPassingYards', s=>Number(s.value??s.displayValue??0));
-        totals.yards+=(ry||0)+(py||0); totals.firstDowns+=add(st,'firstDowns', s=>Number(s.value??s.displayValue??0));
-        totals.sacks+=add(st,'sacks', s=>{const dv=(s.displayValue||'').split('-')[0];const n=Number(s.value??dv);return isNaN(n)?Number(dv)||0:n;});
-        totals.tfl+=add(st,'tacklesForLoss', s=>Number(s.value??s.displayValue??0));
-        const th=add(st,'thirdDownEff', s=>(s.displayValue||'0-0')); const [tm,ta]=String(th).split('-').map(x=>Number(x)||0); totals.thirdMade+=tm; totals.thirdAtt+=ta;
-        const fh=add(st,'fourthDownEff', s=>(s.displayValue||'0-0')); const [fm,fa]=String(fh).split('-').map(x=>Number(x)||0); totals.fourthMade+=fm; totals.fourthAtt+=fa;
-        totals.safeties += add(st,'safeties', s=>Number(s.value??s.displayValue??0));
-      }
-      const stopsFromEff=(totals.thirdAtt-totals.thirdMade)+(totals.fourthAtt-totals.fourthMade);
-
-      let TD=0,FG=0,XP=0,TWO=0,stReturnTD=0,blocks=0,defTdBonus=0,safeties=(totals.safeties||0);
-      const scoringPlays=summary?.scoringPlays||[];
-      for(const sp of scoringPlays){
-        const d=(sp.text||sp.description||'').toLowerCase(), t=(sp.type?.text||sp.scoringType||'').toLowerCase();
-        if(t.includes('touchdown')||d.includes('touchdown')){TD++; if(d.includes('punt return')||d.includes('kickoff return')||d.includes('kick return')) stReturnTD++; if(d.includes('interception return')||d.includes('fumble return')||d.includes('blocked punt')||d.includes('blocked kick')||d.includes('fumble recovered in end zone')) defTdBonus++; if(d.includes('safety')) safeties++;}
-        else if(t.includes('field goal')||d.includes('field goal')) FG++;
-        else if(t.includes('extra point')||d.includes('extra point is good')) XP++;
-        else if(t.includes('two-point')||d.includes('two-point')){ if(d.includes('successful')||d.includes('is good')||d.includes('good')) TWO++; }
-        if(d.includes('blocked')) blocks++;
-      }
-
-      let pbpPlays=[]; try{const gp=pbp?.gamepackageJSON; const collect=a=>{if(Array.isArray(a)) a.forEach(d=>{if(Array.isArray(d.plays)) pbpPlays.push(...d.plays);});}; collect(gp?.drives?.previous); collect(gp?.drives?.current);}catch{}
-      let sacksP=0,tflP=0,stopsP=0,fdP=0,intP=0,frP=0,defTDP=0,stTDP=0,safetyP=0,blockP=0;
-      for(const p of pbpPlays){
-        const t=(p?.text||'').toLowerCase(); if(t.includes('sacked')) sacksP++; if(t.includes('tackle for loss')) tflP++;
-        const dn=p.down, gotFirst=t.includes('first down')||/1st and/i.test(t), tod=t.includes('turnover on downs'), punt=t.startsWith('punt'), fg=(t.includes('field goal')&&(t.includes('is good')||t.includes('missed')||t.includes('blocked')));
-        if((dn===3||dn===4)&&!gotFirst&&(tod||punt||fg)) stopsP++;
-        if(t.includes('first down')) fdP++;
-        if(t.includes('intercepted')){intP++; if(t.includes('for a touchdown')) defTDP++;}
-        if(t.includes('fumble')){if(t.includes('recovered')) frP++; if(t.includes('for a touchdown')||t.includes('recovered in end zone')) defTDP++;}
-        if((t.includes('punt')||t.includes('kickoff')||t.includes('kick return'))&&t.includes('returns')&&t.includes('for a touchdown')) stTDP++;
-        if(t.includes('safety')) safetyP++;
-        if(t.includes('blocked punt')||t.includes('blocked field goal')||(t.includes('blocked')&&t.includes('kick'))) blockP++;
-      }
-      if(!totals.sacks || totals.sacks<sacksP) totals.sacks=sacksP;
-      if(!totals.tfl   || totals.tfl<tflP)     totals.tfl=tflP;
-      if(!totals.firstDowns) totals.firstDowns=fdP;
-
-      const stops=Math.max(stopsFromEff,stopsP);
-      const INT=intP, FR=frP, defTDB=defTDP, stTDB=Math.max(stReturnTD,stTDP), safetiesF=Math.max(safeties,safetyP,totals.safeties||0), blocksF=Math.max(blocks,blockP);
-      let xpP=0,twoP=0; for(const p of pbpPlays){const t=(p.text||'').toLowerCase(); if(t.includes('extra point')&&(t.includes('good')||t.includes('is good'))) xpP++; if(t.includes('two-point')&&(t.includes('successful')||t.includes('good'))) twoP++;}
-      const XPf=Math.max(XP,xpP), TWOf=Math.max(TWO,twoP);
-
-      const offensePts=TD*W.TD+FG*W.FG+XPf*W.XP+TWOf*W.TWO+totals.yards*W.YARD+totals.firstDowns*W.FIRST_DOWN;
-      const defensePts=totals.sacks*W.SACK+totals.tfl*W.TFL+INT*W.INT+FR*W.FR+defTDB*W.DEF_TD_BONUS+safetiesF*W.SAFETY+stops*W.STOP;
-      const score=Number((offensePts+defensePts).toFixed(2));
-
-      const isFinal=(status?.type?.state==='post'||status?.type?.completed===true);
-      const row={ id:eventId, homeName, awayName, homeLogo, awayLogo, homePts, awayPts, score, status: status?.type?.shortDetail || '—', final: isFinal };
-      if(isFinal) S.state.gameScoreCache.set(eventId,row);
-      return row;
-    }catch(e){ console.error(e); return null; }
-  }
-
-  function renderGameLeaderboard(){
-    N.leaderboardCombined.innerHTML='';
-    if(!S.state.lastLeaderboardRows.length){N.leaderboardCombined.innerHTML='<div class="small muted">—</div>'; return;}
-    const rows=S.state.showAll?S.state.lastLeaderboardRows:S.state.lastLeaderboardRows.slice(0,10);
-    rows.forEach(r=>{
-      const div=document.createElement('div'); div.className='lbRow'; div.dataset.eventId=r.id;
-      div.innerHTML=`
-        <div class="lbTeam">
-          ${r.awayLogo ? `<img src="${r.awayLogo}" alt="">` : ''}<span class="lbName">${r.awayName||r.away}</span>
-          <span class="scoreTag mono">${r.awayPts}</span>
-          <span class="lbSmall mono" style="margin:0 6px">at</span>
-          ${r.homeLogo ? `<img src="${r.homeLogo}" alt="">` : ''}<span class="lbName">${r.homeName||r.home}</span>
-          <span class="scoreTag mono">${r.homePts}</span>
-        </div>
-        <div class="lbPts mono">${r.score.toFixed(2)}</div>
-        <div class="lbMeta mono">${r.status}</div>
-      `;
-      div.addEventListener('click',()=>{ const g=S.state.weeklyEvents.find(x=>x.id===r.id); if(g) lockPick({gameId:g.id, ...g}); });
-      N.leaderboardCombined.appendChild(div);
-    });
-    N.toggleAll.textContent=S.state.showAll?'Show top 10':'Show all';
-    N.toggleAll.setAttribute('aria-expanded',String(S.state.showAll));
-  }
-  async function refreshLeaderboardCombined(){
-    try{
-      if(!S.state.weeklyEvents || !S.state.weeklyEvents.length){ await loadWeekGames(); return; }
-      N.leaderboardCombined.innerHTML='<div class="small muted">Loading…</div>';
-      N.lbNote.textContent=`${S.state.weeklyEvents.length} ${cfg.label} game${S.state.weeklyEvents.length===1?'':'s'} in this Tue→Mon board (auto-refreshing).`;
-      const rows=(await Promise.all(S.state.weeklyEvents.map(e=>computeFantasyForGame(e.id)))).filter(Boolean);
-      rows.sort((a,b)=>b.score-a.score); S.state.lastLeaderboardRows=rows; renderGameLeaderboard();
-    }catch(e){ console.error(e); setErr('Leaderboard load failed.'); }
-  }
-
-  async function weeklyTotalsForPlayer(pid, weekKey){
-    const wk=S.state.picks?.[weekKey]||{}; const arr=(wk[pid]?.gameIds)||[];
-    if(!arr.length) return 0;
-    const rows=await Promise.all(arr.map(id=>computeFantasyForGame(id)));
-    return rows.filter(Boolean).reduce((s,r)=>s+(r.score||0),0);
-  }
-  async function weeklyRankPoints(weekKey){
-    const wk=S.state.picks?.[weekKey]||{}; const pids=Object.keys(wk); if(!pids.length) return {};
-    const rows=await Promise.all(pids.map(async pid=>({pid, total: await weeklyTotalsForPlayer(pid, weekKey)})));
-    rows.sort((a,b)=>b.total-a.total);
-    const points={}; rows.forEach((r,i)=>{ points[r.pid]=Math.max(10-i,0); });
-    return points;
-  }
-  async function seasonRankTotals(){
-    const currentKey=WK;
-    const weeks=Object.keys(S.state.picks||{}).filter(wk=>wk<currentKey).sort();
-    const totals=new Map(); (S.state.players||[]).forEach(p=>totals.set(p.id,0));
-    for(const wk of weeks){
-      const pts=await weeklyRankPoints(wk);
-      for(const [pid,v] of Object.entries(pts)){ totals.set(pid,(totals.get(pid)||0)+v); }
-    }
-    return totals;
-  }
-  async function renderPlayersLeaderboard(){
-    if(!S.state.picks[WK]) S.state.picks[WK]={};
-    const wk=S.state.picks[WK];
-    const pids=(S.state.players||[]).map(p=>p.id).filter(pid=>wk[pid]?.gameIds?.length);
-    const rows=await Promise.all(pids.map(async pid=>{
-      const total=await weeklyTotalsForPlayer(pid, WK);
-      const label = `(${wk[pid].gameIds.length}/${PICKS_REQUIRED})${(S.state.players.find(p=>p.id===pid)?.id||'').startsWith(BOT_PREFIX)?' · AI':''}`;
-      return {name:(S.state.players.find(p=>p.id===pid)?.name)||pid, total, label};
-    }));
-    rows.sort((a,b)=>b.total-a.total);
-    N.playersLB.innerHTML='';
-    if(!rows.length){ N.playersLB.innerHTML='<div class="small muted">No picks this week yet.</div>'; return; }
-    rows.forEach(r=>{
-      const div=document.createElement('div'); div.className='lbRow';
-      div.innerHTML=`<div class="lbTeam"><span class="lbName">${r.name}</span><span class="lbSmall mono" style="margin-left:8px">${r.label}</span></div><div class="lbPts mono">${r.total.toFixed(2)}</div><div class="lbMeta mono">Weekly total</div>`;
-      N.playersLB.appendChild(div);
-    });
-  }
-  async function renderPlayersSeasonLeaderboard(){
-    const totals=await seasonRankTotals();
-    const weeks=Object.keys(S.state.picks||{}); const hasAnyPick=pid=>weeks.some(wk=>S.state.picks[wk]?.[pid]?.gameIds?.length);
-    const rows=(S.state.players||[]).filter(p=>hasAnyPick(p.id)).map(p=>({name:p.name,total:totals.get(p.id)||0, bot:(p.id||'').startsWith(BOT_PREFIX)})).sort((a,b)=>b.total-a.total);
-    N.playersSeasonLB.innerHTML='';
-    if(!rows.length){ N.playersSeasonLB.innerHTML='<div class="small muted">No season data yet — make some picks.</div>'; return; }
-    rows.forEach(r=>{
-      const div=document.createElement('div'); div.className='lbRow';
-      div.innerHTML=`<div class="lbTeam"><span class="lbName">${r.name}${r.bot?'<span class="lbSmall" style="margin-left:6px">AI</span>':''}</span></div><div class="lbPts mono">${r.total}</div><div class="lbMeta mono">Season pts</div>`;
-      N.playersSeasonLB.appendChild(div);
-    });
-  }
-
-  // Controls
-  N.toggleAll.addEventListener('click',()=>{ S.state.showAll=!S.state.showAll; renderGameLeaderboard(); });
-
-  // Boot
-  (async function boot(){
-    try{
-      const last=localStorage.getItem(cfg.keyPrefix+'.weekKey'); const key=WK;
-      if(last!==key){ localStorage.setItem(cfg.keyPrefix+'.weekKey', key); }
-      S.state.players=Store.loadPlayers();
-      S.state.picks=Store.loadPicks();
-
-      applyPlayersCollapseState(); // restore collapsible
-
-      ensureAIPlayers(); Store.savePlayers(S.state.players);
-      if(!S.state.picks[WK]) S.state.picks[WK]={}; Store.savePicks(S.state.picks);
-
-      refreshTopBarPlayerSelect();
-      await loadWeekGames();
-      renderPlayers(); renderPlayersLeaderboard(); renderPlayersSeasonLeaderboard();
-      setInterval(()=>{ if(sectionVisible(cfg.sectionId)) renderPlayersLeaderboard(); }, LB_POLL_MS);
-      setInterval(()=>{ if(sectionVisible(cfg.sectionId)) renderPlayersSeasonLeaderboard(); }, LB_POLL_MS*2);
-    }catch(e){ console.error(e); setErr('Boot failed. Try refresh.'); }
-  })();
-
-  // Console helpers for resets
-  window[cfg.keyPrefix+'ResetAll']=function(){ ['players','picks','weekKey','locked'].forEach(s=>localStorage.removeItem(cfg.keyPrefix+'.'+s)); localStorage.removeItem(cfg.uiCollapseKey); location.reload(); }
-  window[cfg.keyPrefix+'ClearWeek']=function(){ const all=Store.loadPicks(); const wk=localStorage.getItem(cfg.keyPrefix+'.weekKey'); if(wk && all[wk]){ delete all[wk]; localStorage.setItem(cfg.keyPrefix+'.picks', JSON.stringify(all)); } location.reload();}
 }
 
-/* ===== Section visibility (pause polls when hidden) ===== */
-function sectionVisible(id){
-  const sec=document.getElementById(id);
-  return !!sec && sec.classList.contains('active');
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-/* ===== Create both league apps ===== */
-const nflApp = createLeagueApp({
-  sectionId: 'sec-nfl',
-  keyPrefix: 'nfl',
-  label: 'NFL',
-  uiCollapseKey: 'ui.playersCollapsedNFL',
-  logoFn: cdnNFL,
-  ids:{awayScore:'awayScoreNFL',homeScore:'homeScoreNFL'},
-  nodes:{
-    root: document.getElementById('sec-nfl'),
-    err: document.getElementById('nfl-err'),
-    topBar: document.getElementById('nfl-topBar'),
-    splash: document.getElementById('nfl-splash'),
-    tracker: document.getElementById('nfl-tracker'),
-
-    liveHeader: document.getElementById('nfl-liveHeader'),
-    setPickSelect: document.getElementById('nfl-setPickSelect'),
-    setPickBtn: document.getElementById('nfl-setPickBtn'),
-    jumpSelect: document.getElementById('nfl-jumpGameSelect'),
-    jumpBtn: document.getElementById('nfl-jumpBtn'),
-    picksLeft: document.getElementById('nfl-picksLeft'),
-
-    boardTeams: document.getElementById('nfl-boardTeams'),
-    clock: document.getElementById('nfl-clock'),
-    quarter: document.getElementById('nfl-quarter'),
-    state: document.getElementById('nfl-state'),
-    fantasyScore: document.getElementById('nfl-fantasyScore'),
-    flowNotes: document.getElementById('nfl-flowNotes'),
-
-    scoringLog: document.getElementById('nfl-scoringLog'),
-
-    leaderboardCombined: document.getElementById('nfl-leaderboardCombined'),
-    lbNote: document.getElementById('nfl-lbNote'),
-    toggleAll: document.getElementById('nfl-toggleAll'),
-
-    playersPanel: document.getElementById('nfl-playersPanel'),
-    playersLB: document.getElementById('nfl-playersLB'),
-    playersSeasonLB: document.getElementById('nfl-playersSeasonLB'),
-    newPlayerName: document.getElementById('nfl-newPlayerName'),
-    addPlayerBtn: document.getElementById('nfl-addPlayerBtn'),
-    clearWeekBtn: document.getElementById('nfl-clearWeekBtn'),
-    playersSection: document.getElementById('nfl-playersSection'),
-    playersToggle: document.getElementById('nfl-playersToggle'),
-    playersContent: document.getElementById('nfl-playersContent'),
-
-    gameCount: document.getElementById('nfl-gameCount'),
-    gridNote: document.getElementById('nfl-gridNote'),
-    gamesGrid: document.getElementById('nfl-gamesGrid'),
-  },
-  api:{
-    scoreboard:(d)=>safeFetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${fmtDate(d)}`),
-    summary:(id)=>safeFetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${id}`),
-    box:(id)=>safeFetch(`https://cdn.espn.com/core/nfl/boxscore?xhr=1&gameId=${id}`),
-    pbp:(id)=>safeFetch(`https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId=${id}`),
-    oddsIndex:(id)=>safeFetch(`https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${id}/competitions/${id}/odds`)
-  },
-  aiBias:{weightSpread:1.0, primetimeBonus:0.6, earlyBonus:0.2, randomness:0.35, earlyBonusDays:['Sun'], earlyHours:[12,14]}
-});
-
-const ncaafApp = createLeagueApp({
-  sectionId: 'sec-ncaaf',
-  keyPrefix: 'ncaaf',
-  label: 'NCAA FBS',
-  uiCollapseKey: 'ui.playersCollapsedNCAAF',
-  logoFn: cdnNCAAF,
-  ids:{awayScore:'awayScoreNCAAF',homeScore:'homeScoreNCAAF'},
-  nodes:{
-    root: document.getElementById('sec-ncaaf'),
-    err: document.getElementById('ncaaf-err'),
-    topBar: document.getElementById('ncaaf-topBar'),
-    splash: document.getElementById('ncaaf-splash'),
-    tracker: document.getElementById('ncaaf-tracker'),
-
-    liveHeader: document.getElementById('ncaaf-liveHeader'),
-    setPickSelect: document.getElementById('ncaaf-setPickSelect'),
-    setPickBtn: document.getElementById('ncaaf-setPickBtn'),
-    jumpSelect: document.getElementById('ncaaf-jumpGameSelect'),
-    jumpBtn: document.getElementById('ncaaf-jumpBtn'),
-    picksLeft: document.getElementById('ncaaf-picksLeft'),
-
-    boardTeams: document.getElementById('ncaaf-boardTeams'),
-    clock: document.getElementById('ncaaf-clock'),
-    quarter: document.getElementById('ncaaf-quarter'),
-    state: document.getElementById('ncaaf-state'),
-    fantasyScore: document.getElementById('ncaaf-fantasyScore'),
-    flowNotes: document.getElementById('ncaaf-flowNotes'),
-
-    scoringLog: document.getElementById('ncaaf-scoringLog'),
-
-    leaderboardCombined: document.getElementById('ncaaf-leaderboardCombined'),
-    lbNote: document.getElementById('ncaaf-lbNote'),
-    toggleAll: document.getElementById('ncaaf-toggleAll'),
-
-    playersPanel: document.getElementById('ncaaf-playersPanel'),
-    playersLB: document.getElementById('ncaaf-playersLB'),
-    playersSeasonLB: document.getElementById('ncaaf-playersSeasonLB'),
-    newPlayerName: document.getElementById('ncaaf-newPlayerName'),
-    addPlayerBtn: document.getElementById('ncaaf-addPlayerBtn'),
-    clearWeekBtn: document.getElementById('ncaaf-clearWeekBtn'),
-    playersSection: document.getElementById('ncaaf-playersSection'),
-    playersToggle: document.getElementById('ncaaf-playersToggle'),
-    playersContent: document.getElementById('ncaaf-playersContent'),
-
-    gameCount: document.getElementById('ncaaf-gameCount'),
-    gridNote: document.getElementById('ncaaf-gridNote'),
-    gamesGrid: document.getElementById('ncaaf-gamesGrid'),
-  },
-  api:{
-    scoreboard:(d)=>safeFetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${fmtDate(d)}&groups=80`),
-    summary:(id)=>safeFetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`),
-    box:(id)=>safeFetch(`https://cdn.espn.com/core/college-football/boxscore?xhr=1&gameId=${id}`),
-    pbp:(id)=>safeFetch(`https://cdn.espn.com/core/college-football/playbyplay?xhr=1&gameId=${id}`),
-    oddsIndex:(id)=>safeFetch(`https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/${id}/competitions/${id}/odds`)
-  },
-  aiBias:{weightSpread:1.0, primetimeBonus:0.5, earlyBonus:0.2, randomness:0.35, earlyBonusDays:['Sat'], earlyHours:[12,16]}
-});
-
-/* ===== Tabs ===== */
-const tabNFL=document.getElementById('tab-nfl'), tabNCAAF=document.getElementById('tab-ncaaf');
-const secNFL=document.getElementById('sec-nfl'), secNCAAF=document.getElementById('sec-ncaaf');
-function selectTab(which){
-  if(which==='nfl'){ tabNFL.setAttribute('aria-selected','true'); tabNCAAF.setAttribute('aria-selected','false'); secNFL.classList.add('active'); secNCAAF.classList.remove('active'); }
-  else { tabNFL.setAttribute('aria-selected','false'); tabNCAAF.setAttribute('aria-selected','true'); secNFL.classList.remove('active'); secNCAAF.classList.add('active'); }
+function selectBoard(key){
+  let rows = [];
+  if (key === '_generic'){
+    rows = normalizeRows(state.raw);
+  } else {
+    rows = normalizeRows(state.raw[key]);
+  }
+  state.rows = rows;
+  $('note').textContent = `${rows.length} players`;
+  renderTable();
 }
-tabNFL.addEventListener('click',()=>selectTab('nfl'));
-tabNCAAF.addEventListener('click',()=>selectTab('ncaaf'));
+
+async function loadJSON(){
+  $('err').style.display='none';
+  $('tbody').innerHTML = '<tr><td colspan="3" class="muted">Loading…</td></tr>';
+  $('note').textContent = '—';
+  try{
+    const res = await fetch(FILE, {cache:'no-store'});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    state.raw = json;
+    state.boards = detectBoards(json);
+    if (!state.boards.length){
+      throw new Error('No leaderboard data found in JSON');
+    }
+
+    fillBoardSelector();
+    const firstKey = new URLSearchParams(location.search).get('board') || state.boards[0].key;
+    $('boardSel').value = firstKey;
+    selectBoard(firstKey);
+    setUpdated(json.updated);
+  }catch(err){
+    $('err').textContent = 'Failed to load leaderboard.json: ' + err.message;
+    $('err').style.display = 'block';
+    $('tbody').innerHTML = '<tr><td colspan="3" class="muted">—</td></tr>';
+  }
+}
+
+function onHeaderClick(ev){
+  const th = ev.target.closest('[data-sort]');
+  if (!th) return;
+  const key = th.getAttribute('data-sort');
+  if (state.sort.key === key){
+    state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sort.key = key;
+    state.sort.dir = key === 'name' ? 'asc' : 'desc';
+  }
+  renderTable();
+}
+
+$('boardSel').addEventListener('change', (e)=> selectBoard(e.target.value));
+$('filter').addEventListener('input', ()=> renderTable());
+$('reloadBtn').addEventListener('click', ()=> loadJSON());
+document.querySelector('thead').addEventListener('click', onHeaderClick);
+
+loadJSON();
 </script>
 </body>
 </html>
